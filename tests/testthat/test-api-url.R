@@ -19,9 +19,16 @@ test_that("px_api_version() detects v1", {
   )
 })
 
-test_that("px_api_version() detects v2", {
+test_that("px_api_version() detects v2 (standard path)", {
   expect_equal(
     px_api_version("https://example.stat.org/api/v2/sv/"),
+    2L
+  )
+})
+
+test_that("px_api_version() detects v2 (SSB-style path with pxwebapi segment)", {
+  expect_equal(
+    px_api_version("https://data.ssb.no/api/pxwebapi/v2/"),
     2L
   )
 })

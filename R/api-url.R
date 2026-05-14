@@ -48,17 +48,20 @@ px_api_version <- function(api_url) {
       api_url = api_url
     )
   }
-  m <- regmatches(api_url, regexpr("/api/v(\\d+)/", api_url))
+  # Match /v1/ or /v2/ anywhere in the URL — handles both standard PXWeb paths
+  # (/api/v1/...) and non-standard ones like SSB's (/api/pxwebapi/v2/...).
+  # Base URLs should include a trailing slash, e.g. ".../v2/".
+  m <- regmatches(api_url, regexpr("/v(\\d+)/", api_url))
   if (length(m) == 0L) {
     rlang::abort(
       c(
         "Cannot determine API version from URL.",
-        i = 'Expected a path segment like "/api/v1/" or "/api/v2/".',
+        i = 'Expected a path segment like "/v1/" or "/v2/".',
         i = paste0("Got: ", api_url)
       ),
       class = "px_error_bad_url",
       api_url = api_url
     )
   }
-  as.integer(sub("/api/v(\\d+)/", "\\1", m))
+  as.integer(sub("/v(\\d+)/", "\\1", m))
 }
