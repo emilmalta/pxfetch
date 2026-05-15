@@ -32,6 +32,7 @@ px_all <- function(pattern = "*") {
 #' @export
 #' @rdname px_helpers
 px_agg <- function(agg_file, ...) {
+  agg_file <- sub("^agg:", "", agg_file)   # tolerate "agg:file.agg" and "file.agg"
   structure(c(...), .px_filter = paste0("agg:", agg_file))
 }
 
@@ -49,6 +50,19 @@ agg <- function(agg_file, ...) px_agg(agg_file, ...)
 
 # Query builders ---------------------------------------------------------------
 
+# Auto-wrap a plain wildcard string as px_all().
+# A bare "*" or pattern like "*0" / "???" is a common shorthand that users
+# expect to work. Only applies when there is no existing .px_filter attribute.
+maybe_wrap_wildcard <- function(v) {
+  if (is.null(attr(v, ".px_filter")) &&
+      is.character(v) &&
+      length(v) == 1L &&
+      grepl("[*?]", v)) {
+    return(px_all(v))
+  }
+  v
+}
+
 # Build the JSON body for a v1 POST request.
 # `selections` is a named list from `...` in px_fetch().
 # Returns a list ready for httr2::req_body_json().
@@ -56,7 +70,7 @@ build_query_v1 <- function(selections) {
   nms <- names(selections)
 
   query_items <- lapply(seq_along(selections), function(i) {
-    v      <- selections[[i]]
+    v      <- maybe_wrap_wildcard(selections[[i]])
     filter <- attr(v, ".px_filter") %||% "item"
 
     list(
@@ -70,7 +84,7 @@ build_query_v1 <- function(selections) {
 
   list(
     query    = query_items,
-    response = list(format = jsonlite::unbox("json-stat2"))
+    response = list(format = jsonlite::unbox("json-stat"))
   )
 }
 
@@ -84,6 +98,7 @@ build_query_v2 <- function(selections) {
 
   parts <- mapply(
     FUN = function(nm, v) {
+      v      <- maybe_wrap_wildcard(v)
       filter <- attr(v, ".px_filter")
       value_str <- if (is.null(filter)) {
         # Plain selection: comma-separated codes

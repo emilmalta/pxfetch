@@ -37,7 +37,7 @@ test_that("agg() is an alias for px_agg()", {
 test_that("build_query_v1() returns a list with query and response", {
   out <- build_query_v1(list())
   expect_named(out, c("query", "response"))
-  expect_equal(out$response$format, jsonlite::unbox("json-stat2"))
+  expect_equal(out$response$format, jsonlite::unbox("json-stat"))
 })
 
 test_that("build_query_v1() builds an item filter for plain values", {

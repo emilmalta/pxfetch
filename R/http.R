@@ -29,7 +29,7 @@ px_get <- function(url, query = list()) {
 # httr2 will serialise it via jsonlite.
 px_post_json <- function(url, body) {
   req <- px_req(url) |>
-    httr2::req_body_json(body)
+    httr2::req_body_json(body, auto_unbox = FALSE)
   resp <- httr2::req_perform(req)
   px_stop_for_status(resp, url)
   resp
