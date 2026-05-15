@@ -27,38 +27,38 @@ library(pxfetch)
 options(px.api_url = "https://example.stat.org/api/v1/en/")
 
 # Fetch a table — returns labels by default, matching the web interface
-px_fetch("POP001")
+pxw_fetch("POP001")
 
 # Select specific values for one or more variables
-px_fetch("POP001",
-  gender = px_all(),
-  time   = px_top(5)
+pxw_fetch("POP001",
+  gender = pxw_all(),
+  time   = pxw_top(5)
 )
 
 # Fetch codes instead of labels (useful for joining, pivoting, automated plots)
-px_fetch("POP001", .column_labels = FALSE, .value_labels = FALSE)
+pxw_fetch("POP001", .column_labels = FALSE, .value_labels = FALSE)
 
 # Inspect what variables and values a table contains
-px_meta("POP001")
+pxw_meta("POP001")
 
 # Add labels in multiple languages (e.g. for multilingual output)
-px_fetch("POP001", .column_labels = FALSE, .value_labels = FALSE) |>
-  px_label(.lang = "en", .codes = "keep") |>
-  px_label(.lang = "da", .codes = "keep") |>
-  px_label(.lang = "kl", .codes = "keep")
+pxw_fetch("POP001", .column_labels = FALSE, .value_labels = FALSE) |>
+  pxw_label(.lang = "en", .codes = "keep") |>
+  pxw_label(.lang = "da", .codes = "keep") |>
+  pxw_label(.lang = "kl", .codes = "keep")
 
-# Works with any tibble — attach table identity first with px_tag()
+# Works with any tibble — attach table identity first with pxw_tag()
 readr::read_csv("POP001.csv") |>
-  px_tag("POP001") |>
-  px_label()
+  pxw_tag("POP001") |>
+  pxw_label()
 ```
 
 ## Design notes
 
 - `httr2` throughout — no `httr`
 - API version inferred from URL; never a separate argument
-- `px_fetch()` dispatches to POST (v1) or GET (v2) automatically
-- `px_fetch()` stamps `px_table_id` and `px_api_url` attributes; `px_label()` uses them
+- `pxw_fetch()` dispatches to POST (v1) or GET (v2) automatically
+- `pxw_fetch()` stamps `px_table_id` and `px_api_url` attributes; `pxw_label()` uses them
 - `rlang::abort()` with classed conditions for all errors
 - `cli::cli_inform()` for all user-facing messages
 - Full test suite via `httptest2` with committed fixtures (CI runs offline)

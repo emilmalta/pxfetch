@@ -1,20 +1,20 @@
 # Label joining and tibble tagging.
 #
-# px_tag() — attaches px_table_id and px_api_url as attributes to any tibble.
-#            Lazy: no API call. Works on data from any source (px_fetch,
-#            read_csv, etc). px_fetch() calls this internally.
+# pxw_tag() — attaches px_table_id and px_api_url as attributes to any tibble.
+#            Lazy: no API call. Works on data from any source (pxw_fetch,
+#            read_csv, etc). pxw_fetch() calls this internally.
 #
-#   px_tag(data, table_id, .api_url = px_api_url())
+#   pxw_tag(data, table_id, .api_url = px_api_url())
 #
-# px_label() — joins human-readable value labels onto a tibble. Requires
-#              px_table_id attribute (set by px_tag / px_fetch). Calls
-#              px_meta() internally with the stored table_id and api_url.
+# pxw_label() — joins human-readable value labels onto a tibble. Requires
+#              px_table_id attribute (set by pxw_tag / pxw_fetch). Calls
+#              pxw_meta() internally with the stored table_id and api_url.
 #
 # Signature:
-#   px_label(
+#   pxw_label(
 #     data,
 #     ...,             # tidyselect: which columns to label; default = all labelable
-#     .lang   = NULL,  # language passed to px_meta(); NULL = API default
+#     .lang   = NULL,  # language passed to pxw_meta(); NULL = API default
 #     .codes  = c("drop", "keep"),  # "drop" replaces code col; "keep" adds label col alongside
 #     suffix  = "_label"            # suffix for added label cols when .codes = "keep"
 #   )
@@ -32,6 +32,6 @@
 #       label column takes the label name, suffix only added on collision
 #       e.g. citydistrict -> citydistrict + bydel (no suffix needed)
 #   - Coerce code column to character before joining —
-#       px_fetch() may return numeric codes (e.g. age as <dbl>)
-#       but px_meta() always returns character values
+#       pxw_fetch() may return numeric codes (e.g. age as <dbl>)
+#       but pxw_meta() always returns character values
 #   - In "keep" mode: relocate label column immediately after code column

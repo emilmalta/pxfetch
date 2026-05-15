@@ -19,12 +19,12 @@
 #' @examples
 #' \dontrun{
 #' options(px.api_url = "https://bank.stat.gl/api/v1/en/Greenland/")
-#' px_meta("BEXSTA")
+#' pxw_meta("BEXSTA")
 #'
-#' px_meta("04861", .lang = "en",
+#' pxw_meta("04861", .lang = "en",
 #'         .api_url = "https://data.ssb.no/api/pxwebapi/v2/")
 #' }
-px_meta <- function(table_id, .lang = NULL, .api_url = px_api_url()) {
+pxw_meta <- function(table_id, .lang = NULL, .api_url = px_api_url()) {
   version <- px_api_version(.api_url)
   url     <- px_url(table_id, .api_url)
   query   <- list()
