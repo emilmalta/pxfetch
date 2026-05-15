@@ -1,9 +1,9 @@
 # Main data fetching function.
 #
-# pxw_fetch() — fetches a table from a PXWeb API and returns a tibble.
+# px_fetch() — fetches a table from a PXWeb API and returns a tibble.
 #
 # Signature:
-#   pxw_fetch(
+#   px_fetch(
 #     table_id,
 #     ...,
 #     .column_labels = TRUE,   # TRUE = variable names as labels (default, matches web UI)
@@ -15,11 +15,11 @@
 ##
 # Key behaviours:
 #   - ... DSL: named arguments select variable values inline
-#   - pxw_all(), pxw_top(n), px_agg() as DSL helpers
+#   - px_all(), px_top(n), px_agg() as DSL helpers
 #   - .expand_rest = TRUE fetches all values for variables not mentioned in ...
 #   - .dry_run = TRUE returns resolved URL + query body without sending
 #   - Automatic 403 -> chunked retry via chunk_large_query()
-#   - On-error 400 diagnosis using pxw_meta()
+#   - On-error 400 diagnosis using px_meta()
 #   - v1/v2 dispatch via px_api_version()
 #
 # Known bugs from statgl to fix during implementation:

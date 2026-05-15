@@ -4,7 +4,7 @@
 
 #' Selection helpers for PXWeb queries
 #'
-#' Use these inside `pxw_fetch()` to control how values are selected for each
+#' Use these inside `px_fetch()` to control how values are selected for each
 #' variable. Plain character vectors select specific values by code.
 #'
 #' @param n Number of values to request. For time variables this is typically
@@ -14,50 +14,50 @@
 #' @param agg_file Aggregation file name as defined in the API.
 #' @param ... Values to select from the aggregation.
 #'
-#' @return A modified vector with a `.pxw_filter` attribute consumed by the
+#' @return A modified vector with a `.px_filter` attribute consumed by the
 #'   query builders. Not intended for direct use.
 #'
 #' @export
-#' @name pxw_helpers
-pxw_top <- function(n = 1L) {
-  structure(as.integer(n), .pxw_filter = "Top")
+#' @name px_helpers
+px_top <- function(n = 1L) {
+  structure(as.integer(n), .px_filter = "Top")
 }
 
 #' @export
-#' @rdname pxw_helpers
-pxw_all <- function(pattern = "*") {
-  structure(as.character(pattern), .pxw_filter = "all")
+#' @rdname px_helpers
+px_all <- function(pattern = "*") {
+  structure(as.character(pattern), .px_filter = "all")
 }
 
 #' @export
-#' @rdname pxw_helpers
-pxw_agg <- function(agg_file, ...) {
-  structure(c(...), .pxw_filter = paste0("agg:", agg_file))
+#' @rdname px_helpers
+px_agg <- function(agg_file, ...) {
+  structure(c(...), .px_filter = paste0("agg:", agg_file))
 }
 
 #' @export
-#' @rdname pxw_helpers
-top <- function(n = 1L) pxw_top(n)
+#' @rdname px_helpers
+top <- function(n = 1L) px_top(n)
 
 #' @export
-#' @rdname pxw_helpers
-every <- function(pattern = "*") pxw_all(pattern)
+#' @rdname px_helpers
+every <- function(pattern = "*") px_all(pattern)
 
 #' @export
-#' @rdname pxw_helpers
-agg <- function(agg_file, ...) pxw_agg(agg_file, ...)
+#' @rdname px_helpers
+agg <- function(agg_file, ...) px_agg(agg_file, ...)
 
 # Query builders ---------------------------------------------------------------
 
 # Build the JSON body for a v1 POST request.
-# `selections` is a named list from `...` in pxw_fetch().
+# `selections` is a named list from `...` in px_fetch().
 # Returns a list ready for httr2::req_body_json().
 build_query_v1 <- function(selections) {
   nms <- names(selections)
 
   query_items <- lapply(seq_along(selections), function(i) {
     v      <- selections[[i]]
-    filter <- attr(v, ".pxw_filter") %||% "item"
+    filter <- attr(v, ".px_filter") %||% "item"
 
     list(
       code      = jsonlite::unbox(nms[[i]]),
@@ -75,7 +75,7 @@ build_query_v1 <- function(selections) {
 }
 
 # Build the query string for a v2 GET request.
-# `selections` is a named list from `...` in pxw_fetch().
+# `selections` is a named list from `...` in px_fetch().
 # Returns a length-1 character string (the raw query string, without "?"),
 # ready to be appended to the URL. We build it manually to avoid bracket
 # encoding issues with req_url_query().
@@ -84,7 +84,7 @@ build_query_v2 <- function(selections) {
 
   parts <- mapply(
     FUN = function(nm, v) {
-      filter <- attr(v, ".pxw_filter")
+      filter <- attr(v, ".px_filter")
       value_str <- if (is.null(filter)) {
         # Plain selection: comma-separated codes
         paste(as.character(v), collapse = ",")
