@@ -43,6 +43,10 @@ top <- function(n = 1L) pxw_top(n)
 #' @rdname pxw_helpers
 every <- function(pattern = "*") pxw_all(pattern)
 
+#' @export
+#' @rdname pxw_helpers
+agg <- function(agg_file, ...) pxw_agg(agg_file, ...)
+
 # Query builders ---------------------------------------------------------------
 
 # Build the JSON body for a v1 POST request.

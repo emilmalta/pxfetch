@@ -28,6 +28,10 @@ test_that("every() is an alias for pxw_all()", {
   expect_equal(every("*"), pxw_all("*"))
 })
 
+test_that("agg() is an alias for pxw_agg()", {
+  expect_equal(agg("5-year.agg", "0-4", "5-9"), pxw_agg("5-year.agg", "0-4", "5-9"))
+})
+
 # build_query_v1 ---------------------------------------------------------------
 
 test_that("build_query_v1() returns a list with query and response", {
