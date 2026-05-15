@@ -5,7 +5,12 @@
 # px_stop_for_status() handles bodies that can't be parsed.
 fake_resp <- function(status, body = raw(0)) {
   structure(
-    list(status_code = as.integer(status), headers = list(), body = body),
+    list(
+      status_code = as.integer(status),
+      headers     = list(),
+      body        = body,
+      cache       = new.env(parent = emptyenv())
+    ),
     class = "httr2_response"
   )
 }
