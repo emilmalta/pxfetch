@@ -1,37 +1,53 @@
 # Label joining and tibble tagging.
 #
-# px_tag() — attaches px_table_id and px_api_url as attributes to any tibble.
-#            Lazy: no API call. Works on data from any source (px_fetch,
-#            read_csv, etc). px_fetch() calls this internally.
+# px_tag()   — attaches px metadata as attributes and sets class "px_ball".
+#              Called internally by px_fetch(). Can also be called directly
+#              to tag a tibble from any source (e.g. read from CSV) so that
+#              px_label() can use it.
 #
-#   px_tag(data, table_id, .api_url = px_api_url())
-#
-# px_label() — joins human-readable value labels onto a tibble. Requires
-#              px_table_id attribute (set by px_tag / px_fetch). Calls
-#              px_meta() internally with the stored table_id and api_url.
-#
-# Signature:
-#   px_label(
-#     data,
-#     ...,             # tidyselect: which columns to label; default = all labelable
-#     .lang   = NULL,  # language passed to px_meta(); NULL = API default
-#     .codes  = c("drop", "keep"),  # "drop" replaces code col; "keep" adds label col alongside
-#     suffix  = "_label"            # suffix for added label cols when .codes = "keep"
-#   )
-#
-# Dot-prefixed parameters avoid collision with tidyselect column names in ...
-#
-# Rules:
-#   - ... uses tidyselect::eval_select(rlang::expr(c(...)), data[labelable])
-#   - Use ...length() == 0L for empty ... check, not length(list(...))
-#   - .codes = "drop"  replaces code column with label column (default)
-#   - .codes = "keep"  retains code column and inserts label column after it
-#   - When variable == label in meta (API echoes code as label):
-#       suffix always applied, e.g. age -> age + age_label
-#   - When variable != label in meta:
-#       label column takes the label name, suffix only added on collision
-#       e.g. citydistrict -> citydistrict + bydel (no suffix needed)
-#   - Coerce code column to character before joining —
-#       px_fetch() may return numeric codes (e.g. age as <dbl>)
-#       but px_meta() always returns character values
-#   - In "keep" mode: relocate label column immediately after code column
+# px_label() — joins human-readable value labels onto a tagged tibble.
+#              Calls px_meta() using the stored table_id and api_url.
+#              Implemented in 0.2.0.
+
+#' Tag a tibble with PXWeb metadata
+#'
+#' Attaches the table ID, table title, and API URL as attributes, and sets the
+#' `"px_ball"` class so that pxfetch's print methods apply. [px_fetch()] calls
+#' this automatically; use `px_tag()` directly when working with data that was
+#' not fetched via [px_fetch()] but still needs `px_label()` support.
+#'
+#' @param data A data frame or tibble.
+#' @param table_id Table ID, e.g. `"BEXSTA"`.
+#' @param title Table title string, typically from the API response. If `NULL`
+#'   (default) the `px_title` attribute will be `NA`.
+#' @param .api_url Base URL of the API the data came from. Defaults to
+#'   [px_api_url()].
+#'
+#' @return `data` with class `c("px_ball", <original classes>)` and attributes
+#'   `px_class`, `px_table_id`, `px_title`, and `px_api_url`.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' options(px.api_url = "https://bank.stat.gl/api/v1/en/Greenland/")
+#'
+#' df <- read.csv("bexsta.csv")
+#' df <- px_tag(df, "BEXSTA")
+#' }
+px_tag <- function(data, table_id, title = NULL, .api_url = px_api_url()) {
+  if (!is.data.frame(data)) {
+    rlang::abort(
+      "`data` must be a data frame or tibble.",
+      class = "px_error_bad_data"
+    )
+  }
+
+  structure(
+    data,
+    px_class    = "ball",
+    px_table_id = table_id,
+    px_title    = title %||% NA_character_,
+    px_api_url  = .api_url,
+    class       = c("px_ball", class(data))
+  )
+}

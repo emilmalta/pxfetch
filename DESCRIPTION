@@ -16,7 +16,9 @@ Imports:
     dplyr,
     httr2,
     jsonlite,
+    pillar,
     rlang,
+    stats,
     tibble
 Suggests:
     cli,
