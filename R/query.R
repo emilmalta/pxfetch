@@ -4,7 +4,7 @@
 
 #' Selection helpers for PXWeb queries
 #'
-#' Use these inside [pxw_fetch()] to control how values are selected for each
+#' Use these inside `pxw_fetch()` to control how values are selected for each
 #' variable. Plain character vectors select specific values by code.
 #'
 #' @param n Number of values to request. For time variables this is typically
