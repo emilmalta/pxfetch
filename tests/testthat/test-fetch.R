@@ -296,10 +296,22 @@ test_that("px_fetch() dry_run rewrites lang in URL for v1", {
 
 # px_fetch() — mocked HTTP -----------------------------------------------------
 
+empty_meta <- function(...) {
+  tibble::tibble(
+    variable    = character(),
+    label       = character(),
+    eliminable  = logical(),
+    is_time     = logical(),
+    value       = character(),
+    value_label = character()
+  )
+}
+
 test_that("px_fetch() returns a px_ball tibble for a v1 API", {
   withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
     local_mocked_bindings(
       px_post_json = function(...) fake_json_resp(jsonstat_v1),
+      px_meta      = empty_meta,
       .package = "pxfetch"
     )
     out <- px_fetch("TBL", gender = c("M", "F"))
@@ -311,7 +323,8 @@ test_that("px_fetch() returns a px_ball tibble for a v1 API", {
 test_that("px_fetch() returns a px_ball tibble for a v2 API", {
   withr::with_options(list(px.api_url = "https://example.com/api/v2/"), {
     local_mocked_bindings(
-      px_get = function(...) fake_json_resp(jsonstat_v2),
+      px_get  = function(...) fake_json_resp(jsonstat_v2),
+      px_meta = empty_meta,
       .package = "pxfetch"
     )
     out <- px_fetch("TBL", gender = c("M", "F"))

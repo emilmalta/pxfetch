@@ -18,9 +18,10 @@
 #'   labels. `FALSE` (default) uses labels for all columns; `TRUE` keeps codes
 #'   for all; a character vector of variable codes keeps codes only for those
 #'   columns.
-#' @param .expand_rest If `TRUE`, all eliminable variables not mentioned in
-#'   `...` are automatically requested with `px_all("*")`. Requires an extra
-#'   [px_meta()] call. Default `FALSE`.
+#' @param .expand_rest If `TRUE`, all unspecified variables are requested with
+#'   `px_all("*")` even when `...` is empty (i.e. fetch everything). When any
+#'   selection is provided in `...`, unspecified variables are always expanded
+#'   automatically regardless of this argument.
 #' @param .dry_run If `TRUE`, returns the resolved URL and query without
 #'   sending a request. Useful for debugging. Default `FALSE`.
 #' @param .lang Language code, e.g. `"en"`, `"da"`. For v1 APIs this rewrites
@@ -84,9 +85,11 @@ px_fetch <- function(
     url <- sub("(/v\\d+/)[^/]+/", paste0("\\1", .lang, "/"), url)
   }
 
-  # Expand unspecified eliminable variables to all values
-  if (.expand_rest) {
-    meta      <- px_meta(table_id, .lang = .lang, .api_url = .api_url)
+  # Expand unspecified variables to all values when any selection is provided
+  # (required for v2 APIs, and gives consistent cross-product behaviour for v1).
+  # .expand_rest = TRUE forces the same expansion even with no selections.
+  if (!.dry_run && (length(selections) > 0L || .expand_rest)) {
+    meta     <- px_meta(table_id, .lang = .lang, .api_url = .api_url)
     all_vars <- unique(meta$variable)
     unspec   <- setdiff(all_vars, names(selections))
     for (v in unspec) selections[[v]] <- px_all("*")

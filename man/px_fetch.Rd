@@ -33,9 +33,10 @@ labels. \code{FALSE} (default) uses labels for all columns; \code{TRUE} keeps co
 for all; a character vector of variable codes keeps codes only for those
 columns.}
 
-\item{.expand_rest}{If \code{TRUE}, all eliminable variables not mentioned in
-\code{...} are automatically requested with \code{px_all("*")}. Requires an extra
-\code{\link[=px_meta]{px_meta()}} call. Default \code{FALSE}.}
+\item{.expand_rest}{If \code{TRUE}, all unspecified variables are requested with
+\code{px_all("*")} even when \code{...} is empty (i.e. fetch everything). When any
+selection is provided in \code{...}, unspecified variables are always expanded
+automatically regardless of this argument.}
 
 \item{.dry_run}{If \code{TRUE}, returns the resolved URL and query without
 sending a request. Useful for debugging. Default \code{FALSE}.}
