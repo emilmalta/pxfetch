@@ -4,12 +4,12 @@
 [![R-CMD-check](https://github.com/emilmalta/pxfetch/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/emilmalta/pxfetch/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-**pxfetch** is a general-purpose R client for [PXWeb](https://www.scb.se/en/services/statistical-programs-for-px-files/px-web/) statistical APIs. It supports both API v1 (POST/JSON) and v2 (GET/query params), with version detection automatic from the URL. Not specific to any single statistics office.
+**pxfetch** is a general-purpose R client for [PXWeb](https://www.scb.se/en/services/statistical-programs-for-px-files/px-web/) statistical APIs. It supports both v1 (POST/JSON) and v2 (GET/query parameters), with API version detected automatically from the URL. It works with any statistics office running PXWeb — not tied to any single country or organisation.
 
 Companion packages:
 
-- [**pxmake**](https://github.com/StatisticsGreenland/pxmake) — Creates and modifies PX files. On CRAN.
-- [**statgl**](https://github.com/StatisticsGreenland/statgl) — Greenland-specific defaults, ggplot2 themes, report tooling. Wraps pxfetch.
+- [**pxmake**](https://github.com/StatisticsGreenland/pxmake) — creates and modifies PX files (on CRAN)
+- [**statgl**](https://github.com/StatisticsGreenland/statgl) — Greenland-specific defaults, ggplot2 themes, and report tooling; wraps pxfetch
 
 ## Installation
 
@@ -18,51 +18,112 @@ Companion packages:
 pak::pak("emilmalta/pxfetch")
 ```
 
-## Quick start
+## Usage
+
+Set your API URL once, for example in `.Rprofile`:
+
+```r
+options(px.api_url = "https://bank.stat.gl/api/v1/en/Greenland/")
+```
+
+### Fetch a table
+
+`px_fetch()` returns a tibble with human-readable labels by default, matching what you see in the browser.
 
 ```r
 library(pxfetch)
 
-# Point at your statistics office's API once, e.g. in .Rprofile
-options(px.api_url = "https://example.stat.org/api/v1/en/")
-
-# Fetch a table — returns labels by default, matching the web interface
-pxw_fetch("POP001")
-
-# Select specific values for one or more variables
-pxw_fetch("POP001",
-  gender = pxw_all(),
-  time   = pxw_top(5)
-)
-
-# Fetch codes instead of labels (useful for joining, pivoting, automated plots)
-pxw_fetch("POP001", .column_labels = FALSE, .value_labels = FALSE)
-
-# Inspect what variables and values a table contains
-pxw_meta("POP001")
-
-# Add labels in multiple languages (e.g. for multilingual output)
-pxw_fetch("POP001", .column_labels = FALSE, .value_labels = FALSE) |>
-  pxw_label(.lang = "en", .codes = "keep") |>
-  pxw_label(.lang = "da", .codes = "keep") |>
-  pxw_label(.lang = "kl", .codes = "keep")
-
-# Works with any tibble — attach table identity first with pxw_tag()
-readr::read_csv("POP001.csv") |>
-  pxw_tag("POP001") |>
-  pxw_label()
+px_fetch("BEXSTA")
 ```
 
-## Design notes
+### Select values
 
-- `httr2` throughout — no `httr`
-- API version inferred from URL; never a separate argument
-- `pxw_fetch()` dispatches to POST (v1) or GET (v2) automatically
-- `pxw_fetch()` stamps `px_table_id` and `px_api_url` attributes; `pxw_label()` uses them
+Pass named arguments using the variable codes from `px_meta()`. DSL helpers `px_top()`, `px_all()`, and `px_agg()` are available for common selection patterns.
+
+```r
+# Five most recent periods, all residence types
+px_fetch("BEXSTA",
+  `residence type` = px_all(),
+  time             = px_top(5)
+)
+
+# Specific values
+px_fetch("BEXSTA",
+  `residence type` = c("A", "B"),
+  time             = c("2020", "2021", "2022")
+)
+```
+
+### Keep codes instead of labels
+
+Useful for joining, pivoting, or automated downstream processing.
+
+```r
+px_fetch("BEXSTA", .column_codes = TRUE, .value_codes = TRUE)
+```
+
+Or selectively for specific variables:
+
+```r
+px_fetch("BEXSTA", .value_codes = "time")
+```
+
+### Explore table metadata
+
+```r
+px_meta("BEXSTA")
+#> # A tibble: 42 × 6
+#>    variable        label           eliminable is_time value value_label
+#>    <chr>           <chr>           <lgl>      <lgl>   <chr> <chr>
+#>  1 residence type  Residence type  TRUE       FALSE   A     Capital city
+#>  ...
+```
+
+### Debug a query before sending
+
+```r
+px_fetch("BEXSTA", time = px_top(3), .dry_run = TRUE)
+```
+
+### Tag a tibble from any source
+
+If your data wasn't fetched via `px_fetch()` — for example, read from a CSV — you can attach the metadata needed for label joining (coming in 0.2.0) with `px_tag()`.
+
+```r
+readr::read_csv("BEXSTA.csv") |>
+  px_tag("BEXSTA")
+```
+
+## v1 and v2 APIs
+
+pxfetch detects the API version from the URL and dispatches accordingly — no extra argument needed.
+
+```r
+# v1: POST with JSON body
+options(px.api_url = "https://bank.stat.gl/api/v1/en/Greenland/")
+px_fetch("BEXSTA")
+
+# v2: GET with query parameters
+options(px.api_url = "https://data.ssb.no/api/pxwebapi/v2/")
+px_fetch("05279")
+```
+
+## Design
+
+- `httr2` throughout, never `httr`
+- API version inferred from URL, never a separate argument
 - `rlang::abort()` with classed conditions for all errors
-- `cli::cli_inform()` for all user-facing messages
-- Full test suite via `httptest2` with committed fixtures (CI runs offline)
+- Full test suite via `httptest2` with committed fixtures — CI runs offline
 
-## Status
+## Roadmap
 
-Early development — not yet on CRAN. See [NEWS.md](NEWS.md) for the changelog.
+- **0.2.0** — `px_label()` for joining human-readable labels onto any tagged tibble, with tidyselect column targeting
+- **0.3.0** — `px_search()` for browsing table catalogues
+- **CRAN** — targeted at 0.5.0
+
+## Related work
+
+- [**pxweb**](https://github.com/ropengov/pxweb) — the established PXWeb client from rOpenGov. `httr`-based, v1 only, returns a more complex list structure. A good choice for v1-only APIs with complex query building needs.
+- [**PxWebApiData**](https://github.com/statisticsnorway/PxWebApiData) — Statistics Norway's client, also general-purpose and supports v2. `httr`-based. 
+
+pxfetch uses `httr2`, returns a flat tidy tibble directly, and provides a small DSL (`px_top()`, `px_all()`, `px_agg()`) for common selection patterns. API version is detected from the URL with no extra argument needed. Label and code display can be controlled per-column, and `px_label()` (0.2.0) will allow joining labels onto any tagged tibble in one step — including data not originally fetched through pxfetch.
