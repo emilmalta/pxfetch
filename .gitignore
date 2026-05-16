@@ -3,24 +3,20 @@
 .Rhistory
 .RData
 .Ruserdata
-
 # Package build output
 *.tar.gz
 *.zip
 *.o
 *.so
 *.dll
-
 # devtools / roxygen / pkgdown
 docs/
 Meta/
 inst/doc/
-
 # testthat snapshots (committed separately when intentional)
 tests/testthat/_snaps/
-
 # macOS
 .DS_Store
-
 # Windows
 Thumbs.db
+CLAUDE.md
