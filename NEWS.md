@@ -1,13 +1,9 @@
 # pxfetch 0.1.0
 
-* Added `px_fetch()` to query and download data from PXWeb APIs (v1 and v2).
-  Supports named variable selections, DSL helpers, language switching,
-  selective code/label display, and a dry-run mode for debugging queries.
-* Added `px_meta()` to retrieve variable and value metadata for a table as a
-  flat tibble, with the table title stored as `attr(result, "px_title")`.
-* Added selection helpers `px_top()`, `px_all()`, and `px_agg()` with short
-  aliases `top()`, `every()`, and `agg()` for use inside `px_fetch()`.
-* Added `px_api_url()` to get and set the default API URL via
-  `options(px.api_url)`.
-* Added `px_tag()` to attach PXWeb metadata attributes to any data frame,
-  enabling `px_label()` (coming in 0.2.0) to work on data from any source.
+* Added `px_fetch()` to query and download data from PXWeb APIs (v1 and v2). Supports named variable selections using variable codes from `px_meta()`, language switching via `.lang`, selective code/label display via `.column_codes` and `.value_codes`, fetching all unspecified eliminable variables via `.expand_rest`, and a dry-run mode via `.dry_run` for inspecting queries before sending.
+* Added `px_meta()` to retrieve variable and value metadata for a table as a flat tibble. The table title is stored as `attr(result, "px_title")`.
+* Added `px_top()`, `px_all()`, and `px_agg()` as query DSL helpers for use inside `px_fetch()`, with short aliases `top()`, `every()`, and `agg()`. Plain `"*"` wildcard strings are automatically coerced to `px_all("*")`.
+* Added `px_api_url()` to get and set the default API URL via `options(px.api_url)`.
+* Added `px_url()` to construct the canonical table URL from a table ID and base API URL.
+* Added `px_tag()` to attach PXWeb metadata attributes to any data frame, enabling `px_label()` (coming in 0.2.0) to work on data from any source.
+* Tibbles returned by `px_fetch()` have class `px_ball` and print with the table title in the header and a `px_meta()` hint in the footer.
