@@ -85,13 +85,19 @@ px_fetch <- function(
     url <- sub("(/v\\d+/)[^/]+/", paste0("\\1", .lang, "/"), url)
   }
 
-  # Expand unspecified variables to all values when any selection is provided
-  # (required for v2 APIs, and gives consistent cross-product behaviour for v1).
-  # .expand_rest = TRUE forces the same expansion even with no selections.
+  # When any selection is provided, mandatory (non-eliminable) variables must be
+  # explicitly included in the query — v2 APIs reject partial queries otherwise.
+  # Eliminable variables are left unspecified so the API applies its own default
+  # (the eliminationValue, typically the aggregate/total category).
+  # .expand_rest = TRUE overrides this and expands ALL unspecified variables.
   if (!.dry_run && (length(selections) > 0L || .expand_rest)) {
-    meta     <- px_meta(table_id, .lang = .lang, .api_url = .api_url)
-    all_vars <- unique(meta$variable)
-    unspec   <- setdiff(all_vars, names(selections))
+    meta <- px_meta(table_id, .lang = .lang, .api_url = .api_url)
+    target_vars <- if (.expand_rest) {
+      unique(meta$variable)
+    } else {
+      unique(meta$variable[!meta$eliminable])
+    }
+    unspec <- setdiff(target_vars, names(selections))
     for (v in unspec) selections[[v]] <- px_all("*")
   }
 
