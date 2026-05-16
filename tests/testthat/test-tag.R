@@ -1,5 +1,7 @@
 # px_tag() ---------------------------------------------------------------------
 
+withr::local_options(px.api_url = "https://example.com/api/v1/en/")
+
 test_that("px_tag() returns a px_ball", {
   df  <- tibble::tibble(x = 1L)
   out <- px_tag(df, "TBL")
