@@ -1,6 +1,6 @@
 # Label joining and tibble tagging.
 #
-# px_tag()   — attaches px metadata as attributes and sets class "px_ball".
+# px_tag()   — attaches px metadata as attributes and sets class "tbl_px".
 #              Called internally by px_fetch(). Can also be called directly
 #              to tag a tibble from any source (e.g. read from CSV) so that
 #              px_label() can use it.
@@ -12,7 +12,7 @@
 #' Tag a tibble with PXWeb metadata
 #'
 #' Attaches the table ID, table title, and API URL as attributes, and sets the
-#' `"px_ball"` class so that pxfetch's print methods apply. [px_fetch()] calls
+#' `"tbl_px"` class so that pxfetch's print methods apply. [px_fetch()] calls
 #' this automatically; use `px_tag()` directly when working with data that was
 #' not fetched via [px_fetch()] but still needs `px_label()` support.
 #'
@@ -23,7 +23,7 @@
 #' @param .api_url Base URL of the API the data came from. Defaults to
 #'   [px_api_url()].
 #'
-#' @return `data` with class `c("px_ball", <original classes>)` and attributes
+#' @return `data` with class `c("tbl_px", <original classes>)` and attributes
 #'   `px_class`, `px_table_id`, `px_title`, and `px_api_url`.
 #' @export
 #'
@@ -44,10 +44,10 @@ px_tag <- function(data, table_id, title = NULL, .api_url = px_api_url()) {
 
   structure(
     data,
-    px_class    = "ball",
+    px_class    = "tbl_px",
     px_table_id = table_id,
     px_title    = title %||% NA_character_,
     px_api_url  = .api_url,
-    class       = c("px_ball", class(data))
+    class       = c("tbl_px", class(data))
   )
 }

@@ -6,6 +6,8 @@
   per-variable control. Default is `"none"` — labels everywhere, matching the
   browser UI. Passing `"all"` gives a hint suggesting `"both"`.
 * `px_fetch()`: `.expand_rest` renamed to `.fetch_all`.
+* Tibbles returned by `px_fetch()` and `px_tag()` now have class `tbl_px`
+  (was `px_ball`).
 
 # pxfetch 0.1.0
 

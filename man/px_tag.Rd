@@ -18,12 +18,12 @@ px_tag(data, table_id, title = NULL, .api_url = px_api_url())
 \code{\link[=px_api_url]{px_api_url()}}.}
 }
 \value{
-\code{data} with class \verb{c("px_ball", <original classes>)} and attributes
+\code{data} with class \verb{c("tbl_px", <original classes>)} and attributes
 \code{px_class}, \code{px_table_id}, \code{px_title}, and \code{px_api_url}.
 }
 \description{
 Attaches the table ID, table title, and API URL as attributes, and sets the
-\code{"px_ball"} class so that pxfetch's print methods apply. \code{\link[=px_fetch]{px_fetch()}} calls
+\code{"tbl_px"} class so that pxfetch's print methods apply. \code{\link[=px_fetch]{px_fetch()}} calls
 this automatically; use \code{px_tag()} directly when working with data that was
 not fetched via \code{\link[=px_fetch]{px_fetch()}} but still needs \code{px_label()} support.
 }

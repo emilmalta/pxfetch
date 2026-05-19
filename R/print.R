@@ -1,16 +1,16 @@
-# Print methods for px_ball tibbles.
+# Print methods for tbl_px tibbles.
 #
-# px_ball is a subclass of tbl_df, so pillar/tibble handle most of the
+# tbl_px is a subclass of tbl_df, so pillar/tibble handle most of the
 # formatting. We only override:
 #
-#   tbl_sum.px_ball           -- appends "Title:" to the standard tibble header
-#   tbl_format_footer.px_ball -- appends a px_meta() hint to the footer
+#   tbl_sum.tbl_px           -- appends "Title:" to the standard tibble header
+#   tbl_format_footer.tbl_px -- appends a px_meta() hint to the footer
 
 #' @importFrom pillar tbl_sum tbl_format_footer style_subtle
 NULL
 
 #' @export
-tbl_sum.px_ball <- function(x, ...) {
+tbl_sum.tbl_px <- function(x, ...) {
   parent <- NextMethod()
   title  <- attr(x, "px_title")
 
@@ -22,7 +22,7 @@ tbl_sum.px_ball <- function(x, ...) {
 }
 
 #' @export
-tbl_format_footer.px_ball <- function(x, setup, ...) {
+tbl_format_footer.tbl_px <- function(x, setup, ...) {
   default  <- NextMethod()
   table_id <- attr(x, "px_table_id")
 

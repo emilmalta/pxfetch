@@ -365,7 +365,7 @@ empty_meta <- function(...) {
   )
 }
 
-test_that("px_fetch() returns a px_ball tibble for a v1 API", {
+test_that("px_fetch() returns a tbl_px tibble for a v1 API", {
   withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
     local_mocked_bindings(
       px_post_json = function(...) fake_json_resp(jsonstat_v1),
@@ -373,12 +373,12 @@ test_that("px_fetch() returns a px_ball tibble for a v1 API", {
       .package = "pxfetch"
     )
     out <- px_fetch("TBL", gender = c("M", "F"))
-    expect_s3_class(out, "px_ball")
+    expect_s3_class(out, "tbl_px")
     expect_s3_class(out, "tbl_df")
   })
 })
 
-test_that("px_fetch() returns a px_ball tibble for a v2 API", {
+test_that("px_fetch() returns a tbl_px tibble for a v2 API", {
   withr::with_options(list(px.api_url = "https://example.com/api/v2/"), {
     local_mocked_bindings(
       px_get  = function(...) fake_json_resp(jsonstat_v2),
@@ -386,7 +386,7 @@ test_that("px_fetch() returns a px_ball tibble for a v2 API", {
       .package = "pxfetch"
     )
     out <- px_fetch("TBL", gender = c("M", "F"))
-    expect_s3_class(out, "px_ball")
+    expect_s3_class(out, "tbl_px")
   })
 })
 
