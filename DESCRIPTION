@@ -1,6 +1,6 @@
 Package: pxfetch
 Title: Query PXWeb Statistical APIs
-Version: 0.1.0.9000
+Version: 0.2.0
 Authors@R:
     person("Emil", "Malta", , "emilmalta89@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = ""))
