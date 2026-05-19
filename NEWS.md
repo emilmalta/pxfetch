@@ -1,5 +1,12 @@
 # pxfetch (development version)
 
+* `px_fetch()`: `.column_codes` and `.value_codes` replaced by a single `.codes`
+  argument. Pass a string (`"none"`, `"both"`, `"columns"`, `"values"`) for a
+  global setting, or a named character vector (with optional `.default` slot) for
+  per-variable control. Default is `"none"` — labels everywhere, matching the
+  browser UI. Passing `"all"` gives a hint suggesting `"both"`.
+* `px_fetch()`: `.expand_rest` renamed to `.fetch_all`.
+
 # pxfetch 0.1.0
 
 * Added `px_fetch()` to query and download data from PXWeb APIs (v1 and v2). Supports named variable selections using variable codes from `px_meta()`, language switching via `.lang`, selective code/label display via `.column_codes` and `.value_codes`, fetching all unspecified eliminable variables via `.expand_rest`, and a dry-run mode via `.dry_run` for inspecting queries before sending.

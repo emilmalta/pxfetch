@@ -8,20 +8,21 @@
 #' @param table_id Table ID, e.g. `"BEXSTA"` or `"04861"`.
 #' @param ... Named selections: `variable_code = values`. Values can be a
 #'   character vector of codes, or a DSL helper such as [px_top()],
-#'   [px_all()], or [px_agg()]. Unspecified eliminable variables use the
-#'   API default (typically a single value) unless `.expand_rest = TRUE`.
-#' @param .column_codes Controls whether dimension column names are shown as
-#'   variable codes or labels. `FALSE` (default) uses labels for all columns;
-#'   `TRUE` keeps codes for all; a character vector of variable codes keeps
-#'   codes only for those columns.
-#' @param .value_codes Controls whether cell values are shown as codes or
-#'   labels. `FALSE` (default) uses labels for all columns; `TRUE` keeps codes
-#'   for all; a character vector of variable codes keeps codes only for those
-#'   columns.
-#' @param .expand_rest If `TRUE`, all unspecified variables are requested with
-#'   `px_all("*")` even when `...` is empty (i.e. fetch everything). When any
-#'   selection is provided in `...`, unspecified variables are always expanded
-#'   automatically regardless of this argument.
+#'   [px_all()], or [px_agg()]. Variables not named are handled automatically:
+#'   those with a default aggregate (e.g. a "Total" category) are collapsed to
+#'   it; those without are fetched in full. Use `.fetch_all = TRUE` to fetch
+#'   all values for every variable regardless.
+#' @param .codes Controls whether column names and cell values are shown as
+#'   codes or labels. Default `"none"` uses labels everywhere (matching the
+#'   browser UI). Pass `"both"` for codes in both column names and cell values,
+#'   `"columns"` for codes in column names only, or `"values"` for codes in
+#'   cell values only. For per-variable control, pass a named character vector
+#'   where each name is a variable code and each value is one of the above
+#'   strings; an optional `.default` slot sets the fallback for unlisted
+#'   variables (e.g. `.codes = c(.default = "both", Tid = "none")`).
+#' @param .fetch_all If `TRUE`, all values are fetched for every unspecified
+#'   variable. Default `FALSE` lets the API collapse variables that have a
+#'   defined aggregate (e.g. a "Total" category) to that single value.
 #' @param .dry_run If `TRUE`, returns the resolved URL and query without
 #'   sending a request. Useful for debugging. Default `FALSE`.
 #' @param .lang Language code, e.g. `"en"`, `"da"`. For v1 APIs this rewrites
@@ -45,22 +46,28 @@
 #' # Most recent 5 periods, all residence types
 #' px_fetch("BEXSTA", `residence type` = px_all(), time = px_top(5))
 #'
-#' #' # Keep raw codes instead of labels
-#' px_fetch("BEXSTA", residence type` = "A", .column_codes = TRUE, .value_codes = TRUE)
+#' # Keep raw codes instead of labels
+#' px_fetch("BEXSTA", `residence type` = "A", .codes = "both")
+#'
+#' # Codes in column names only, labels in cell values
+#' px_fetch("BEXSTA", `residence type` = "A", .codes = "columns")
+#'
+#' # Per-variable: code the Region column, label everything else
+#' px_fetch("BEXSTA", .fetch_all = TRUE, .codes = c(Region = "both"))
 #'
 #' # Inspect the query without sending it
-#' px_fetch("BEXSTA", residence type` = "A", .dry_run = TRUE)
+#' px_fetch("BEXSTA", `residence type` = "A", .dry_run = TRUE)
 #' }
 px_fetch <- function(
     table_id,
     ...,
-    .column_codes = FALSE,
-    .value_codes  = FALSE,
-    .expand_rest  = FALSE,
-    .dry_run       = FALSE,
-    .lang          = NULL,
-    .api_url       = px_api_url()
+    .codes     = "none",
+    .fetch_all = FALSE,
+    .dry_run   = FALSE,
+    .lang      = NULL,
+    .api_url   = px_api_url()
 ) {
+  validate_codes_arg(.codes)
   selections <- list(...)
 
   if (...length() > 0L) {
@@ -89,10 +96,10 @@ px_fetch <- function(
   # explicitly included in the query — v2 APIs reject partial queries otherwise.
   # Eliminable variables are left unspecified so the API applies its own default
   # (the eliminationValue, typically the aggregate/total category).
-  # .expand_rest = TRUE overrides this and expands ALL unspecified variables.
-  if (!.dry_run && (length(selections) > 0L || .expand_rest)) {
+  # .fetch_all = TRUE overrides this and expands ALL unspecified variables.
+  if (!.dry_run && (length(selections) > 0L || .fetch_all)) {
     meta <- px_meta(table_id, .lang = .lang, .api_url = .api_url)
-    target_vars <- if (.expand_rest) {
+    target_vars <- if (.fetch_all) {
       unique(meta$variable)
     } else {
       unique(meta$variable[!meta$eliminable])
@@ -121,9 +128,7 @@ px_fetch <- function(
     resp <- tryCatch(
       px_post_json(url, body),
       px_error_http_403 = function(e) {
-        chunk_large_query(
-          table_id, selections, .column_codes, .value_codes, .lang, .api_url
-        )
+        chunk_large_query(table_id, selections, .codes, .lang, .api_url)
       }
     )
   } else {
@@ -131,9 +136,7 @@ px_fetch <- function(
     resp     <- tryCatch(
       px_get(data_url),
       px_error_http_403 = function(e) {
-        chunk_large_query(
-          table_id, selections, .column_codes, .value_codes, .lang, .api_url
-        )
+        chunk_large_query(table_id, selections, .codes, .lang, .api_url)
       }
     )
   }
@@ -143,7 +146,7 @@ px_fetch <- function(
     return(px_tag(resp, table_id = table_id, .api_url = .api_url))
   }
 
-  parsed <- parse_jsonstat(resp, .column_codes = .column_codes, .value_codes = .value_codes)
+  parsed <- parse_jsonstat(resp, .codes = .codes)
 
   px_tag(parsed$data, table_id = table_id, title = parsed$title, .api_url = .api_url)
 }
@@ -162,17 +165,6 @@ build_v2_data_url <- function(table_url, qs, .lang = NULL) {
   paste0(data_url, "?", paste(parts, collapse = "&"))
 }
 
-# Resolve a .column_codes / .value_codes argument to the set of variable codes
-# that should retain their raw codes rather than be labelled.
-#   FALSE           -> label everything (empty set to skip)
-#   TRUE            -> keep codes for all variables
-#   character vector -> keep codes only for the named variable codes
-resolve_code_selection <- function(sel, all_ids) {
-  if (isFALSE(sel))       character(0)
-  else if (isTRUE(sel))   all_ids
-  else                    as.character(sel)
-}
-
 # Parse a json-stat or json-stat2 HTTP response into a flat tibble.
 #
 # json-stat (v1): data wrapped in $dataset; id and size live inside $dimension.
@@ -180,7 +172,11 @@ resolve_code_selection <- function(sel, all_ids) {
 #
 # Both encode values as a flat array in row-major order (first dimension varies
 # slowest). We reconstruct the full cartesian grid via expand.grid().
-parse_jsonstat <- function(resp, .column_codes = FALSE, .value_codes = FALSE) {
+#
+# .codes is the validated .codes argument from px_fetch() — a string or named
+# character vector. resolve_codes_per_var() maps it to per-variable settings
+# once var ids are known from the parsed response.
+parse_jsonstat <- function(resp, .codes = "none") {
   raw <- httr2::resp_body_json(resp, simplifyVector = FALSE)
 
   # Normalise to a common shape regardless of format version
@@ -223,24 +219,20 @@ parse_jsonstat <- function(resp, .column_codes = FALSE, .value_codes = FALSE) {
     double(1L)
   )
 
-  result <- tibble::as_tibble(grid)
+  result   <- tibble::as_tibble(grid)
+  codes_map <- resolve_codes_per_var(.codes, ids)
 
-  # Resolve which variable codes should keep their codes (vs. get labels).
-  # FALSE = label everything, TRUE = code everything, character = selective.
-  keep_val_codes <- resolve_code_selection(.value_codes,  ids)
-  keep_col_codes <- resolve_code_selection(.column_codes, ids)
-
-  # Replace value codes with human-readable labels for non-selected columns
+  # Replace value codes with human-readable labels unless "both" or "values"
   for (var_id in ids) {
-    if (var_id %in% keep_val_codes) next
+    if (codes_map[[var_id]] %in% c("both", "values")) next
     lbl     <- dim_fn(var_id)$category$label
     lbl_vec <- stats::setNames(as.character(unlist(lbl)), names(lbl))
     result[[var_id]] <- lbl_vec[result[[var_id]]]
   }
 
-  # Rename dimension columns from variable code to variable label
+  # Rename column from variable code to variable label unless "both" or "columns"
   for (var_id in ids) {
-    if (var_id %in% keep_col_codes) next
+    if (codes_map[[var_id]] %in% c("both", "columns")) next
     var_label <- dim_fn(var_id)$label %||% var_id
     if (nzchar(var_label) && var_label != var_id) {
       names(result)[names(result) == var_id] <- var_label

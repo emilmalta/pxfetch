@@ -9,8 +9,7 @@
 chunk_large_query <- function(
     table_id,
     selections,
-    .column_codes,
-    .value_codes,
+    .codes,
     .lang,
     .api_url
 ) {

@@ -64,27 +64,72 @@ jsonstat_v2 <- list(
   value = list(10, 20, 30, 40)
 )
 
-# resolve_code_selection() -----------------------------------------------------
+# validate_codes_arg() ---------------------------------------------------------
 
-test_that("resolve_code_selection() returns character(0) for FALSE", {
-  out <- resolve_code_selection(FALSE, c("A", "B", "C"))
-  expect_identical(out, character(0))
+test_that("validate_codes_arg() accepts valid global strings", {
+  expect_no_error(validate_codes_arg("none"))
+  expect_no_error(validate_codes_arg("both"))
+  expect_no_error(validate_codes_arg("columns"))
+  expect_no_error(validate_codes_arg("values"))
 })
 
-test_that("resolve_code_selection() returns all_ids for TRUE", {
-  ids <- c("gender", "year", "region")
-  out <- resolve_code_selection(TRUE, ids)
-  expect_identical(out, ids)
+test_that("validate_codes_arg() errors on invalid string", {
+  expect_error(validate_codes_arg("bad"), class = "px_error_bad_codes")
 })
 
-test_that("resolve_code_selection() coerces character vector as-is", {
-  out <- resolve_code_selection(c("gender", "year"), c("gender", "year", "region"))
-  expect_identical(out, c("gender", "year"))
+test_that('validate_codes_arg() gives "Did you mean \\"both\\"?" hint for "all"', {
+  expect_error(
+    validate_codes_arg("all"),
+    regexp = 'Did you mean "both"',
+    class  = "px_error_bad_codes"
+  )
 })
 
-test_that("resolve_code_selection() coerces non-character to character", {
-  out <- resolve_code_selection(c(1L, 2L), character(0))
-  expect_type(out, "character")
+test_that("validate_codes_arg() accepts a valid named character vector", {
+  expect_no_error(validate_codes_arg(c(Region = "both", Tid = "none")))
+})
+
+test_that("validate_codes_arg() accepts a named vector with .default", {
+  expect_no_error(validate_codes_arg(c(.default = "both", Tid = "none")))
+})
+
+test_that("validate_codes_arg() errors on invalid value in named vector", {
+  expect_error(
+    validate_codes_arg(c(Region = "all")),
+    class = "px_error_bad_codes"
+  )
+})
+
+test_that("validate_codes_arg() errors on unnamed non-singleton", {
+  expect_error(
+    validate_codes_arg(c("both", "none")),
+    class = "px_error_bad_codes"
+  )
+})
+
+# resolve_codes_per_var() ------------------------------------------------------
+
+test_that("resolve_codes_per_var() global string applies to all vars", {
+  out <- resolve_codes_per_var("both", c("gender", "year"))
+  expect_equal(unname(out), c("both", "both"))
+  expect_named(out, c("gender", "year"))
+})
+
+test_that("resolve_codes_per_var() named vector overrides specific vars", {
+  out <- resolve_codes_per_var(c(gender = "both"), c("gender", "year"))
+  expect_equal(out[["gender"]], "both")
+  expect_equal(out[["year"]],   "none")
+})
+
+test_that("resolve_codes_per_var() .default slot sets the fallback", {
+  out <- resolve_codes_per_var(c(.default = "both", Tid = "none"), c("Region", "Tid"))
+  expect_equal(out[["Region"]], "both")
+  expect_equal(out[["Tid"]],   "none")
+})
+
+test_that("resolve_codes_per_var() ignores names not in var_ids", {
+  out <- resolve_codes_per_var(c(Unknown = "both"), c("gender", "year"))
+  expect_equal(unname(out), c("none", "none"))
 })
 
 # parse_jsonstat() — format detection ------------------------------------------
@@ -117,16 +162,13 @@ test_that("parse_jsonstat() produces 4 rows for a 2x2 table", {
 })
 
 test_that("parse_jsonstat() first dimension varies slowest (row-major)", {
-  out   <- parse_jsonstat(fake_json_resp(jsonstat_v1), .column_codes = TRUE, .value_codes = TRUE)
-  tbl   <- out$data
-  # First dim (gender) should go M, M, F, F — not M, F, M, F
-  expect_equal(tbl$gender, c("M", "M", "F", "F"))
+  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .codes = "both")
+  expect_equal(out$data$gender, c("M", "M", "F", "F"))
 })
 
 test_that("parse_jsonstat() last dimension varies fastest (row-major)", {
-  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .column_codes = TRUE, .value_codes = TRUE)
-  tbl <- out$data
-  expect_equal(tbl$year, c("2020", "2021", "2020", "2021"))
+  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .codes = "both")
+  expect_equal(out$data$year, c("2020", "2021", "2020", "2021"))
 })
 
 test_that("parse_jsonstat() maps values in row-major order", {
@@ -134,52 +176,52 @@ test_that("parse_jsonstat() maps values in row-major order", {
   expect_equal(out$data$value, c(10, 20, 30, 40))
 })
 
-# parse_jsonstat() — labels vs. codes ------------------------------------------
+# parse_jsonstat() — .codes behaviour ------------------------------------------
 
-test_that("parse_jsonstat() applies value labels by default (.value_codes=FALSE)", {
-  out <- parse_jsonstat(fake_json_resp(jsonstat_v1))
+test_that('parse_jsonstat() .codes="none" labels column names and cell values', {
+  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .codes = "none")
+  expect_named(out$data, c("Gender", "Year", "value"))
   expect_equal(unique(out$data$Gender), c("Male", "Female"))
 })
 
-test_that("parse_jsonstat() keeps value codes when .value_codes=TRUE", {
-  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .value_codes = TRUE)
-  expect_true("gender" %in% names(out$data) || "Gender" %in% names(out$data))
-  gender_col <- out$data[[grep("ender", names(out$data))]]
-  expect_true(all(gender_col %in% c("M", "F")))
-})
-
-test_that("parse_jsonstat() renames columns to variable labels by default", {
-  out <- parse_jsonstat(fake_json_resp(jsonstat_v1))
-  expect_named(out$data, c("Gender", "Year", "value"))
-})
-
-test_that("parse_jsonstat() keeps column codes when .column_codes=TRUE", {
-  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .column_codes = TRUE)
+test_that('parse_jsonstat() .codes="both" keeps variable codes as column names', {
+  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .codes = "both")
   expect_true("gender" %in% names(out$data))
-  expect_true("year" %in% names(out$data))
+  expect_true("year"   %in% names(out$data))
 })
 
-test_that("parse_jsonstat() selective .column_codes keeps only named vars as codes", {
-  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .column_codes = "gender")
+test_that('parse_jsonstat() .codes="both" keeps raw codes in cell values', {
+  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .codes = "both")
+  expect_true(all(out$data$gender %in% c("M", "F")))
+})
+
+test_that('parse_jsonstat() .codes="columns" keeps code column names, labels values', {
+  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .codes = "columns")
   expect_true("gender" %in% names(out$data))
+  expect_true(all(out$data$gender %in% c("Male", "Female")))
+})
+
+test_that('parse_jsonstat() .codes="values" labels column names, keeps code values', {
+  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .codes = "values")
+  expect_true("Gender" %in% names(out$data))
+  expect_true(all(out$data$Gender %in% c("M", "F")))
+})
+
+test_that("parse_jsonstat() per-variable .codes applies selectively", {
+  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .codes = c(gender = "both"))
+  # gender: code column name + code values
+  expect_true("gender" %in% names(out$data))
+  expect_true(all(out$data$gender %in% c("M", "F")))
+  # year: label column name (default "none")
   expect_true("Year" %in% names(out$data))
-})
-
-test_that("parse_jsonstat() selective .value_codes keeps only named vars as codes", {
-  out <- parse_jsonstat(fake_json_resp(jsonstat_v1), .value_codes = "gender")
-  tbl <- out$data
-  gender_col <- tbl[[grep("ender", names(tbl))]]
-  expect_true(all(gender_col %in% c("M", "F")))
-  # year values should still be labels (which happen to equal codes here)
-  expect_true("Year" %in% names(tbl) || "year" %in% names(tbl))
 })
 
 # parse_jsonstat() — missing values --------------------------------------------
 
 test_that("parse_jsonstat() converts NULL values to NA_real_", {
-  body      <- jsonstat_v2
+  body       <- jsonstat_v2
   body$value <- list(10, NULL, 30, 40)
-  out       <- parse_jsonstat(fake_json_resp(body))
+  out        <- parse_jsonstat(fake_json_resp(body))
   expect_true(is.na(out$data$value[[2L]]))
   expect_type(out$data$value, "double")
 })
@@ -190,7 +232,7 @@ test_that("parse_jsonstat() respects index position order, not insertion order",
   body <- jsonstat_v2
   # Reverse the index insertion order for year
   body$dimension$year$category$index <- list(`2021` = 1L, `2020` = 0L)
-  out  <- parse_jsonstat(body |> fake_json_resp(), .column_codes = TRUE, .value_codes = TRUE)
+  out  <- parse_jsonstat(body |> fake_json_resp(), .codes = "both")
   year_vals <- out$data$year[out$data$gender == "M"]
   expect_equal(year_vals, c("2020", "2021"))
 })
@@ -243,6 +285,22 @@ test_that("px_fetch() errors when any ... argument is unnamed", {
     expect_error(
       px_fetch("TBL", gender = "M", "extra"),
       class = "px_error_unnamed_selection"
+    )
+  })
+})
+
+test_that("px_fetch() errors on invalid .codes string", {
+  withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
+    expect_error(px_fetch("TBL", .codes = "bad"), class = "px_error_bad_codes")
+  })
+})
+
+test_that('px_fetch() gives "Did you mean \\"both\\"?" hint for .codes = "all"', {
+  withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
+    expect_error(
+      px_fetch("TBL", .codes = "all"),
+      regexp = 'Did you mean "both"',
+      class  = "px_error_bad_codes"
     )
   })
 })
@@ -354,27 +412,26 @@ test_that("px_fetch() attaches title attribute from response", {
   })
 })
 
-test_that("px_fetch() .column_codes=TRUE keeps variable codes as column names", {
+test_that('px_fetch() .codes="both" keeps variable codes as column names', {
   withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
     local_mocked_bindings(
       px_post_json = function(...) fake_json_resp(jsonstat_v1),
       .package = "pxfetch"
     )
-    out <- px_fetch("TBL", .column_codes = TRUE)
+    out <- px_fetch("TBL", .codes = "both")
     expect_true("gender" %in% names(out))
-    expect_true("year" %in% names(out))
+    expect_true("year"   %in% names(out))
   })
 })
 
-test_that("px_fetch() .value_codes=TRUE keeps raw codes in cells", {
+test_that('px_fetch() .codes="both" keeps raw codes in cells', {
   withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
     local_mocked_bindings(
       px_post_json = function(...) fake_json_resp(jsonstat_v1),
       .package = "pxfetch"
     )
-    out <- px_fetch("TBL", .value_codes = TRUE)
-    gender_col <- out[[grep("ender", names(out))]]
-    expect_true(all(gender_col %in% c("M", "F")))
+    out <- px_fetch("TBL", .codes = "both")
+    expect_true(all(out$gender %in% c("M", "F")))
   })
 })
 

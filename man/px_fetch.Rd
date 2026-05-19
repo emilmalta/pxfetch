@@ -7,9 +7,8 @@
 px_fetch(
   table_id,
   ...,
-  .column_codes = FALSE,
-  .value_codes = FALSE,
-  .expand_rest = FALSE,
+  .codes = "none",
+  .fetch_all = FALSE,
   .dry_run = FALSE,
   .lang = NULL,
   .api_url = px_api_url()
@@ -20,23 +19,23 @@ px_fetch(
 
 \item{...}{Named selections: \code{variable_code = values}. Values can be a
 character vector of codes, or a DSL helper such as \code{\link[=px_top]{px_top()}},
-\code{\link[=px_all]{px_all()}}, or \code{\link[=px_agg]{px_agg()}}. Unspecified eliminable variables use the
-API default (typically a single value) unless \code{.expand_rest = TRUE}.}
+\code{\link[=px_all]{px_all()}}, or \code{\link[=px_agg]{px_agg()}}. Variables not named are handled automatically:
+those with a default aggregate (e.g. a "Total" category) are collapsed to
+it; those without are fetched in full. Use \code{.fetch_all = TRUE} to fetch
+all values for every variable regardless.}
 
-\item{.column_codes}{Controls whether dimension column names are shown as
-variable codes or labels. \code{FALSE} (default) uses labels for all columns;
-\code{TRUE} keeps codes for all; a character vector of variable codes keeps
-codes only for those columns.}
+\item{.codes}{Controls whether column names and cell values are shown as
+codes or labels. Default \code{"none"} uses labels everywhere (matching the
+browser UI). Pass \code{"both"} for codes in both column names and cell values,
+\code{"columns"} for codes in column names only, or \code{"values"} for codes in
+cell values only. For per-variable control, pass a named character vector
+where each name is a variable code and each value is one of the above
+strings; an optional \code{.default} slot sets the fallback for unlisted
+variables (e.g. \code{.codes = c(.default = "both", Tid = "none")}).}
 
-\item{.value_codes}{Controls whether cell values are shown as codes or
-labels. \code{FALSE} (default) uses labels for all columns; \code{TRUE} keeps codes
-for all; a character vector of variable codes keeps codes only for those
-columns.}
-
-\item{.expand_rest}{If \code{TRUE}, all unspecified variables are requested with
-\code{px_all("*")} even when \code{...} is empty (i.e. fetch everything). When any
-selection is provided in \code{...}, unspecified variables are always expanded
-automatically regardless of this argument.}
+\item{.fetch_all}{If \code{TRUE}, all values are fetched for every unspecified
+variable. Default \code{FALSE} lets the API collapse variables that have a
+defined aggregate (e.g. a "Total" category) to that single value.}
 
 \item{.dry_run}{If \code{TRUE}, returns the resolved URL and query without
 sending a request. Useful for debugging. Default \code{FALSE}.}
@@ -69,10 +68,16 @@ px_fetch("BEXSTA", `residence type` = "A", time = px_all())
 # Most recent 5 periods, all residence types
 px_fetch("BEXSTA", `residence type` = px_all(), time = px_top(5))
 
-#' # Keep raw codes instead of labels
-px_fetch("BEXSTA", residence type` = "A", .column_codes = TRUE, .value_codes = TRUE)
+# Keep raw codes instead of labels
+px_fetch("BEXSTA", `residence type` = "A", .codes = "both")
+
+# Codes in column names only, labels in cell values
+px_fetch("BEXSTA", `residence type` = "A", .codes = "columns")
+
+# Per-variable: code the Region column, label everything else
+px_fetch("BEXSTA", .fetch_all = TRUE, .codes = c(Region = "both"))
 
 # Inspect the query without sending it
-px_fetch("BEXSTA", residence type` = "A", .dry_run = TRUE)
+px_fetch("BEXSTA", `residence type` = "A", .dry_run = TRUE)
 }
 }
