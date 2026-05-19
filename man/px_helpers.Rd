@@ -6,7 +6,6 @@
 \alias{px_all}
 \alias{px_agg}
 \alias{top}
-\alias{every}
 \alias{agg}
 \title{Selection helpers for PXWeb queries}
 \usage{
@@ -17,8 +16,6 @@ px_all(pattern = "*")
 px_agg(agg_file, ...)
 
 top(n = 1L)
-
-every(pattern = "*")
 
 agg(agg_file, ...)
 }

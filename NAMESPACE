@@ -3,7 +3,6 @@
 S3method(tbl_format_footer,tbl_px)
 S3method(tbl_sum,tbl_px)
 export(agg)
-export(every)
 export(px_agg)
 export(px_all)
 export(px_api_url)

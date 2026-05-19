@@ -24,9 +24,6 @@ test_that("top() is an alias for px_top()", {
   expect_equal(top(2L), px_top(2L))
 })
 
-test_that("every() is an alias for px_all()", {
-  expect_equal(every("*"), px_all("*"))
-})
 
 test_that("agg() is an alias for px_agg()", {
   expect_equal(agg("5-year.agg", "0-4", "5-9"), px_agg("5-year.agg", "0-4", "5-9"))

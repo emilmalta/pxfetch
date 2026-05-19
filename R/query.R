@@ -42,10 +42,6 @@ top <- function(n = 1L) px_top(n)
 
 #' @export
 #' @rdname px_helpers
-every <- function(pattern = "*") px_all(pattern)
-
-#' @export
-#' @rdname px_helpers
 agg <- function(agg_file, ...) px_agg(agg_file, ...)
 
 # Query builders ---------------------------------------------------------------

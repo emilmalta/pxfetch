@@ -8,6 +8,7 @@
 * `px_fetch()`: `.expand_rest` renamed to `.fetch_all`.
 * Tibbles returned by `px_fetch()` and `px_tag()` now have class `tbl_px`
   (was `px_ball`).
+* `every()` alias removed. Use `px_all()` or bare `"*"`.
 
 # pxfetch 0.1.0
 
