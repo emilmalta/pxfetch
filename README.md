@@ -59,13 +59,13 @@ px_fetch("BEXSTA",
 Useful for joining, pivoting, or automated downstream processing.
 
 ```r
-px_fetch("BEXSTA", .column_codes = TRUE, .value_codes = TRUE)
+px_fetch("BEXSTA", .codes = "both")
 ```
 
-Or selectively for specific variables:
+Or selectively per variable:
 
 ```r
-px_fetch("BEXSTA", .value_codes = "time")
+px_fetch("BEXSTA", .codes = c(time = "both"))
 ```
 
 ### Explore table metadata
@@ -87,7 +87,7 @@ px_fetch("BEXSTA", time = px_top(3), .dry_run = TRUE)
 
 ### Tag a tibble from any source
 
-If your data wasn't fetched via `px_fetch()` — for example, read from a CSV — you can attach the metadata needed for label joining (coming in 0.2.0) with `px_tag()`.
+If your data wasn't fetched via `px_fetch()` — for example, read from a CSV — you can attach the metadata needed for label joining (coming in 0.3.0) with `px_tag()`.
 
 ```r
 readr::read_csv("BEXSTA.csv") |>
@@ -117,8 +117,8 @@ px_fetch("05279")
 
 ## Roadmap
 
-- **0.2.0** — `px_label()` for joining human-readable labels onto any tagged tibble, with tidyselect column targeting
-- **0.3.0** — `px_search()` for browsing table catalogues
+- **0.3.0** — `px_label()` for joining human-readable labels onto any tagged tibble, with tidyselect column targeting; time-format helpers (`px_year()`, `px_year_month()`, etc.)
+- **0.4.0** — `px_search()` for browsing table catalogues
 - **CRAN** — targeted at 0.5.0
 
 ## Related work
@@ -126,4 +126,4 @@ px_fetch("05279")
 - [**pxweb**](https://github.com/ropengov/pxweb) — the established PXWeb client from rOpenGov. `httr`-based, v1 only, returns a more complex list structure. A good choice for v1-only APIs with complex query building needs.
 - [**PxWebApiData**](https://github.com/statisticsnorway/PxWebApiData) — Statistics Norway's client, also general-purpose and supports v2. `httr`-based. 
 
-pxfetch uses `httr2`, returns a flat tidy tibble directly, and provides a small DSL (`px_top()`, `px_all()`, `px_agg()`) for common selection patterns. API version is detected from the URL with no extra argument needed. Label and code display can be controlled per-column, and `px_label()` (0.2.0) will allow joining labels onto any tagged tibble in one step — including data not originally fetched through pxfetch.
+pxfetch uses `httr2`, returns a flat tidy tibble directly, and provides a small DSL (`px_top()`, `px_all()`, `px_agg()`) for common selection patterns. API version is detected from the URL with no extra argument needed. Label and code display can be controlled per-variable via `.codes`, and `px_label()` (coming in 0.3.0) will allow joining labels onto any tagged tibble in one step — including data not originally fetched through pxfetch.
