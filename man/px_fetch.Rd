@@ -9,6 +9,7 @@ px_fetch(
   ...,
   .codes = "none",
   .fetch_all = FALSE,
+  .meta = NULL,
   .dry_run = FALSE,
   .lang = NULL,
   .api_url = px_api_url()
@@ -36,6 +37,11 @@ variables (e.g. \code{.codes = c(.default = "both", Tid = "none")}).}
 \item{.fetch_all}{If \code{TRUE}, all values are fetched for every unspecified
 variable. Default \code{FALSE} lets the API collapse variables that have a
 defined aggregate (e.g. a "Total" category) to that single value.}
+
+\item{.meta}{Optional result of \code{\link[=px_meta]{px_meta()}} for this table. If supplied,
+the internal metadata lookup is skipped entirely — no extra round-trip.
+Useful when you have already called \code{\link[=px_meta]{px_meta()}} and want to reuse it
+across multiple \code{\link[=px_fetch]{px_fetch()}} calls.}
 
 \item{.dry_run}{If \code{TRUE}, returns the resolved URL and query without
 sending a request. Useful for debugging. Default \code{FALSE}.}

@@ -1,3 +1,33 @@
+# Session cache for px_meta() results.
+# Keyed on (table_id, api_url, lang) so each unique combination is cached
+# independently. Cleared with px_meta_cache_clear().
+.px_meta_cache <- new.env(parent = emptyenv())
+
+.px_meta_cache_key <- function(table_id, .lang, .api_url) {
+  paste(table_id, .api_url %||% "", .lang %||% "", sep = "\n")
+}
+
+.px_meta_is_cached <- function(table_id, .lang, .api_url) {
+  exists(
+    .px_meta_cache_key(table_id, .lang, .api_url),
+    envir    = .px_meta_cache,
+    inherits = FALSE
+  )
+}
+
+#' Clear the px_meta() session cache
+#'
+#' `px_meta()` caches results in memory for the duration of the R session.
+#' Call this to force a fresh API lookup on the next `px_meta()` call for
+#' any table.
+#'
+#' @return Invisible `NULL`, called for its side effect.
+#' @export
+px_meta_cache_clear <- function() {
+  rm(list = ls(.px_meta_cache), envir = .px_meta_cache)
+  invisible(NULL)
+}
+
 #' Retrieve variable metadata for a PXWeb table
 #'
 #' Returns a flat tibble with one row per variable–value combination,
@@ -25,13 +55,17 @@
 #'         .api_url = "https://data.ssb.no/api/pxwebapi/v2/")
 #' }
 px_meta <- function(table_id, .lang = NULL, .api_url = px_api_url()) {
+  key <- .px_meta_cache_key(table_id, .lang, .api_url)
+  if (exists(key, envir = .px_meta_cache, inherits = FALSE)) {
+    return(.px_meta_cache[[key]])
+  }
+
   version <- px_api_version(.api_url)
   url     <- px_url(table_id, .api_url)
   query   <- list()
 
   if (version == 1L) {
     if (!is.null(.lang)) {
-      # Rewrite /v1/da/ -> /v1/en/ (or whatever .lang is)
       url <- sub("(/v\\d+/)[^/]+/", paste0("\\1", .lang, "/"), url)
     }
   } else {
@@ -39,9 +73,11 @@ px_meta <- function(table_id, .lang = NULL, .api_url = px_api_url()) {
     if (!is.null(.lang)) query <- list(lang = .lang)
   }
 
-  resp <- px_get(url, query = query)
+  resp   <- px_get(url, query = query)
+  result <- if (version == 1L) parse_meta_v1(resp) else parse_meta_v2(resp)
 
-  if (version == 1L) parse_meta_v1(resp) else parse_meta_v2(resp)
+  .px_meta_cache[[key]] <- result
+  result
 }
 
 # Internal parsers -------------------------------------------------------------

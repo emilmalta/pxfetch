@@ -128,3 +128,56 @@ test_that("parse_meta_v2() attaches px_title attribute", {
   tbl <- parse_meta_v2(fake_json_resp(v2_body))
   expect_equal(attr(tbl, "px_title"), "Test table v2")
 })
+
+# px_meta() caching ------------------------------------------------------------
+
+test_that("px_meta() caches result on first call", {
+  px_meta_cache_clear()
+  withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
+    local_mocked_bindings(
+      px_get = function(...) fake_json_resp(v1_body),
+      .package = "pxfetch"
+    )
+    px_meta("TBL")
+    expect_true(.px_meta_is_cached("TBL", NULL, "https://example.com/api/v1/en/"))
+  })
+})
+
+test_that("px_meta() returns cached result without a second network call", {
+  px_meta_cache_clear()
+  withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
+    call_count <- 0L
+    local_mocked_bindings(
+      px_get = function(...) { call_count <<- call_count + 1L; fake_json_resp(v1_body) },
+      .package = "pxfetch"
+    )
+    px_meta("TBL")
+    px_meta("TBL")
+    expect_equal(call_count, 1L)
+  })
+})
+
+test_that("px_meta_cache_clear() empties the cache", {
+  withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
+    local_mocked_bindings(
+      px_get = function(...) fake_json_resp(v1_body),
+      .package = "pxfetch"
+    )
+    px_meta("TBL")
+    px_meta_cache_clear()
+    expect_false(.px_meta_is_cached("TBL", NULL, "https://example.com/api/v1/en/"))
+  })
+})
+
+test_that("px_meta() caches different table IDs independently", {
+  px_meta_cache_clear()
+  withr::with_options(list(px.api_url = "https://example.com/api/v1/en/"), {
+    local_mocked_bindings(
+      px_get = function(...) fake_json_resp(v1_body),
+      .package = "pxfetch"
+    )
+    px_meta("TBL1")
+    expect_true(.px_meta_is_cached("TBL1", NULL, "https://example.com/api/v1/en/"))
+    expect_false(.px_meta_is_cached("TBL2", NULL, "https://example.com/api/v1/en/"))
+  })
+})

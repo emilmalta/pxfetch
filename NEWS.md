@@ -9,6 +9,10 @@
 * Tibbles returned by `px_fetch()` and `px_tag()` now have class `tbl_px`
   (was `px_ball`).
 * `every()` alias removed. Use `px_all()` or bare `"*"`.
+* `px_meta()` results are now cached in memory for the R session, keyed on
+  table ID, API URL, and language. Use `px_meta_cache_clear()` to reset.
+* `px_fetch()` gains a `.meta` argument: pass a pre-fetched `px_meta()`
+  result to skip the internal metadata lookup entirely.
 
 # pxfetch 0.1.0
 

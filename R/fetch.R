@@ -23,6 +23,10 @@
 #' @param .fetch_all If `TRUE`, all values are fetched for every unspecified
 #'   variable. Default `FALSE` lets the API collapse variables that have a
 #'   defined aggregate (e.g. a "Total" category) to that single value.
+#' @param .meta Optional result of [px_meta()] for this table. If supplied,
+#'   the internal metadata lookup is skipped entirely — no extra round-trip.
+#'   Useful when you have already called [px_meta()] and want to reuse it
+#'   across multiple [px_fetch()] calls.
 #' @param .dry_run If `TRUE`, returns the resolved URL and query without
 #'   sending a request. Useful for debugging. Default `FALSE`.
 #' @param .lang Language code, e.g. `"en"`, `"da"`. For v1 APIs this rewrites
@@ -63,11 +67,26 @@ px_fetch <- function(
     ...,
     .codes     = "none",
     .fetch_all = FALSE,
+    .meta      = NULL,
     .dry_run   = FALSE,
     .lang      = NULL,
     .api_url   = px_api_url()
 ) {
   validate_codes_arg(.codes)
+
+  if (!is.null(.meta)) {
+    if (!is.data.frame(.meta) ||
+        !all(c("variable", "eliminable") %in% names(.meta))) {
+      rlang::abort(
+        c(
+          "`.meta` must be a data frame returned by `px_meta()`.",
+          i = "Expected columns: variable, eliminable (and others)."
+        ),
+        class = "px_error_bad_meta"
+      )
+    }
+  }
+
   selections <- list(...)
 
   if (...length() > 0L) {
@@ -98,7 +117,11 @@ px_fetch <- function(
   # (the eliminationValue, typically the aggregate/total category).
   # .fetch_all = TRUE overrides this and expands ALL unspecified variables.
   if (!.dry_run && (length(selections) > 0L || .fetch_all)) {
-    meta <- px_meta(table_id, .lang = .lang, .api_url = .api_url)
+    if (!is.null(.meta)) {
+      meta <- .meta
+    } else {
+      meta <- px_meta(table_id, .lang = .lang, .api_url = .api_url)
+    }
     target_vars <- if (.fetch_all) {
       unique(meta$variable)
     } else {
