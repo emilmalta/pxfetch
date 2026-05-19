@@ -13,6 +13,10 @@
   table ID, API URL, and language. Use `px_meta_cache_clear()` to reset.
 * `px_fetch()` gains a `.meta` argument: pass a pre-fetched `px_meta()`
   result to skip the internal metadata lookup entirely.
+* `px_fetch()` now falls back to chunked retrieval when the API signals a
+  query is too large: HTTP 403 on v1 APIs, HTTP 400 ("Too many cells
+  selected") on v2 APIs. Chunks are fetched one variable at a time with a
+  progress bar; chunk size is determined automatically.
 
 # pxfetch 0.1.0
 

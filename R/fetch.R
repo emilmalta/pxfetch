@@ -146,27 +146,34 @@ px_fetch <- function(
     return(out)
   }
 
-  # Send request, falling back to chunked retrieval on 403
+  # Send request, falling back to chunked retrieval on query-too-large errors.
+  # v1 returns 403; v2 returns 400 ("Too many cells selected").
+  chunk_handler <- function(e) {
+    chunk_large_query(table_id, selections, .codes, .lang, .api_url)
+  }
   if (version == 1L) {
     resp <- tryCatch(
       px_post_json(url, body),
-      px_error_http_403 = function(e) {
-        chunk_large_query(table_id, selections, .codes, .lang, .api_url)
-      }
+      px_error_http_403 = chunk_handler
     )
   } else {
     data_url <- build_v2_data_url(url, qs, .lang)
     resp     <- tryCatch(
       px_get(data_url),
-      px_error_http_403 = function(e) {
-        chunk_large_query(table_id, selections, .codes, .lang, .api_url)
-      }
+      px_error_http_403 = chunk_handler,
+      px_error_http_400 = chunk_handler
     )
   }
 
-  # chunk_large_query returns a data frame directly; tag and return early
+  # chunk_large_query returns a data frame directly; tag and return early.
+  # The title is stashed as an attribute by chunk_large_query (from px_meta).
   if (inherits(resp, "data.frame")) {
-    return(px_tag(resp, table_id = table_id, .api_url = .api_url))
+    return(px_tag(
+      resp,
+      table_id = table_id,
+      title    = attr(resp, "px_title"),
+      .api_url = .api_url
+    ))
   }
 
   parsed <- parse_jsonstat(resp, .codes = .codes)
