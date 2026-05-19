@@ -1,17 +1,3 @@
-# Helpers ----------------------------------------------------------------------
-
-fake_json_resp <- function(x) {
-  structure(
-    list(
-      status_code = 200L,
-      headers     = list("content-type" = "application/json; charset=utf-8"),
-      body        = charToRaw(jsonlite::toJSON(x, auto_unbox = TRUE, null = "null")),
-      cache       = new.env(parent = emptyenv())
-    ),
-    class = "httr2_response"
-  )
-}
-
 # 2x2 table: gender (M, F) x year (2020, 2021)
 # Row-major values: (M,2020)=10, (M,2021)=20, (F,2020)=30, (F,2021)=40
 jsonstat_v1 <- list(

@@ -96,7 +96,7 @@ parse_meta_v1 <- function(resp) {
     )
   })
 
-  structure(dplyr::bind_rows(rows), px_title = raw$title)
+  structure(do.call(rbind, rows), px_title = raw$title)
 }
 
 parse_meta_v2 <- function(resp) {
@@ -122,5 +122,5 @@ parse_meta_v2 <- function(resp) {
     )
   })
 
-  structure(dplyr::bind_rows(rows), px_title = raw$label)
+  structure(do.call(rbind, rows), px_title = raw$label)
 }
